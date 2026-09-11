@@ -53,8 +53,6 @@ class PIDController():
 vel_controller = PIDController(vel_kp, vel_ki, vel_kd)
 theta_controller = PIDController(theta_kp, theta_ki, theta_kd)
 
-prev_theta = 0
-
 def controller(x):
     """controller for a car
 
@@ -69,8 +67,6 @@ def controller(x):
     phi    = np.mod(x[2], 2*np.pi)  # current heading (radians)
     v      = x[3]                   # current velocity
     theta   = x[4]                  # current steering angle
-
-    global prev_theta
 
     index = find_nearest_point(xpos, ypos)
     if (index > 101):
@@ -89,6 +85,12 @@ def controller(x):
     d_theta = theta_controller.ang_calculate(ang_error)
 
     a = vel_controller.calculate(v, 7)
+
+    # i think the sim clamps this already but i guess for irl
+    if a > 4:
+        a = 4
+    elif a < -10:
+        a = -10
     return np.array([a, d_theta])
 
 sim.set_controller(controller)
