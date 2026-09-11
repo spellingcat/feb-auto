@@ -81,21 +81,15 @@ def controller(x):
     target_heading = np.arctan2(setpoint[1] - ypos, setpoint[0] - xpos)
     target_heading = np.mod(target_heading, 2*np.pi)
 
-    actual_tire_heading = phi + theta # fuck man idk
+    actual_tire_heading = phi + theta
     actual_tire_heading = np.mod(actual_tire_heading, 2*np.pi)
 
-    # d_theta = theta_controller.calculate(actual_tire_heading, target_heading)
-    # ang_error = np.mod(target_heading - phi, 2*np.pi)
+    # rewrap angle
     ang_error = (target_heading - actual_tire_heading + np.pi) % (2 * np.pi) - np.pi
     d_theta = theta_controller.ang_calculate(ang_error)
 
-    # d_theta = (theta - prev_theta) / 0.1 + theta_controller.calculate(phi, target_heading)
-
-    # prev_theta = theta
-
-    a = vel_controller.calculate(v, 30)
+    a = vel_controller.calculate(v, 7)
     return np.array([a, d_theta])
-    # return np.array([1, 10])
 
 sim.set_controller(controller)
 sim.run()
