@@ -29,8 +29,7 @@ def find_nearest_point(x, y):
     return index
 
 class PIDController():
-    
-    period = 0.1
+    period = 0.01
 
     def __init__(self, kp, ki, kd):
         self.kp = kp
