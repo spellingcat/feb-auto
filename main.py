@@ -3,15 +3,11 @@ from simulator import Simulator, centerline
 
 sim = Simulator()
 
-x_kp = 1
-x_ki = 0
-x_kd = 0
+vel_kp = 1
+vel_ki = 0
+vel_kd = 0
 
-y_kp = 1
-y_ki = 0
-y_kd = 0
-
-theta_kp = 1
+theta_kp = 0.5
 theta_ki = 0
 theta_kd = 0
 
@@ -20,36 +16,25 @@ for i in range(105): # 105 meter track
     meters[i] = i
 path = centerline(meters)
 
-dist_traveled = 0
-x_last = -1
-y_last = -1
-
-# def find_next_point(x):
-#     for p in path:
-#         if p[0] > x:
-#             return p
-#     return np.zeros(2)
-
-def find_nearest_point(pt):
-    min_dist = np.linalg.norm(pt.subtract(path[0]))
-    min_pt = path[0]
+def find_nearest_point(x, y):
+    min_dist = np.hypot(x-path[0][0], y-path[0][1])
     index = 0
     for i in range(105):
-        if np.linalg.norm(pt.subtract(path[i])) < min:
-            min_pt = path[i]
+        if np.hypot(x-path[i][0], y-path[i][1]) < min_dist:
             index = i
-    return min_pt, i
+            min_dist = np.hypot(x-path[i][0], y-path[i][1])
+    return index
 
-speed = 4
 class PIDController():
-    total_error = 0
-    prev_error = 0
-    period = 0.02 # don't know what this is but should be how often the control loop runs
+    
+    period = 0.1
 
     def __init__(self, kp, ki, kd):
         self.kp = kp
         self.ki = ki
         self.kd = kd
+        self.total_error = 0
+        self.prev_error = 0
 
     def calculate(self, current, setpoint):
         error = setpoint - current
@@ -57,10 +42,18 @@ class PIDController():
         self.prev_error = error
         self.total_error += error
         return output
+    # for angles where wrapping is annoying
+    # does python not have overloading??
+    def ang_calculate(self, error):
+        output = self.kp * error + self.ki * self.total_error + self.kd * ((error - self.prev_error) / self.period)
+        self.prev_error = error
+        self.total_error += error
+        return output
 
-x_controller = PIDController(x_kp, x_ki, x_kd)
-y_controller = PIDController(y_kp, y_ki, y_kd)
+vel_controller = PIDController(vel_kp, vel_ki, vel_kd)
 theta_controller = PIDController(theta_kp, theta_ki, theta_kd)
+
+prev_theta = 0
 
 def controller(x):
     """controller for a car
@@ -77,19 +70,31 @@ def controller(x):
     v      = x[3]                   # current velocity
     theta   = x[4]                  # current steering angle
 
-    # we are starting over actually
+    global prev_theta
 
-    nearest_pt = find_nearest_point(np.array[xpos, ypos])[0]
-    index = find_nearest_point(np.array[xpos, ypos])[1]
-    setpoint = path[index + 1]
-    x_vel = np.cos(phi) * v
-    y_vel = np.sin(phi) * v
-    x_vel += x_controller.calculate(xpos, nearest_pt[0])
-    y_vel += y_controller.calculate(ypos, nearest_pt[1])
+    index = find_nearest_point(xpos, ypos)
+    if (index > 99):
+        setpoint = path[104] # idk just stop it
+    else:
+        setpoint = path[index + 5]
 
-    
-    
+    target_heading = np.arctan2(setpoint[1] - ypos, setpoint[0] - xpos)
+    target_heading = np.mod(target_heading, 2*np.pi)
+
+    actual_tire_heading = phi + theta # fuck man idk
+    actual_tire_heading = np.mod(actual_tire_heading, 2*np.pi)
+
+    # d_theta = theta_controller.calculate(actual_tire_heading, target_heading)
+    ang_error = np.mod(target_heading - phi, 2*np.pi)
+    d_theta = theta_controller.ang_calculate(ang_error)
+
+    # d_theta = (theta - prev_theta) / 0.1 + theta_controller.calculate(phi, target_heading)
+
+    prev_theta = theta
+
+    a = vel_controller.calculate(v, 4)
     return np.array([a, d_theta])
+    # return np.array([1, 10])
 
 sim.set_controller(controller)
 sim.run()
