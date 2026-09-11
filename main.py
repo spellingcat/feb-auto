@@ -3,13 +3,13 @@ from simulator import Simulator, centerline
 
 sim = Simulator()
 
-vel_kp = 2
+vel_kp = 10
 vel_ki = 0
-vel_kd = 0
+vel_kd = 0.1
 
 theta_kp = 5
 theta_ki = 0
-theta_kd = 0.3
+theta_kd = 0
 
 meters = np.zeros(105)
 for i in range(105): # 105 meter track
@@ -91,9 +91,9 @@ def controller(x):
 
     # d_theta = (theta - prev_theta) / 0.1 + theta_controller.calculate(phi, target_heading)
 
-    prev_theta = theta
+    # prev_theta = theta
 
-    a = vel_controller.calculate(v, 10)
+    a = vel_controller.calculate(v, 30)
     return np.array([a, d_theta])
     # return np.array([1, 10])
 
