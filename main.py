@@ -3,6 +3,9 @@ from simulator import Simulator, centerline
 
 sim = Simulator()
 
+MAX_ACCEL = 4
+MIN_ACCEL = -10
+
 vel_kp = 10
 vel_ki = 0
 vel_kd = 0.1
@@ -36,15 +39,7 @@ class PIDController():
         self.total_error = 0
         self.prev_error = 0
 
-    def calculate(self, current, setpoint):
-        error = setpoint - current
-        output = self.kp * error + self.ki * self.total_error + self.kd * ((error - self.prev_error) / self.period)
-        self.prev_error = error
-        self.total_error += error
-        return output
-    # for angles where wrapping is annoying
-    # does python not have overloading??
-    def ang_calculate(self, error):
+    def calculate(self, error):
         output = self.kp * error + self.ki * self.total_error + self.kd * ((error - self.prev_error) / self.period)
         self.prev_error = error
         self.total_error += error
@@ -53,7 +48,11 @@ class PIDController():
 vel_controller = PIDController(vel_kp, vel_ki, vel_kd)
 theta_controller = PIDController(theta_kp, theta_ki, theta_kd)
 
+# for figuring out the total time
+count = 0
+
 def controller(x):
+    global count
     """controller for a car
 
     Args:
@@ -82,15 +81,18 @@ def controller(x):
 
     # rewrap angle
     ang_error = (target_heading - actual_tire_heading + np.pi) % (2 * np.pi) - np.pi
-    d_theta = theta_controller.ang_calculate(ang_error)
+    d_theta = theta_controller.calculate(ang_error)
 
-    a = vel_controller.calculate(v, 7)
+    a = vel_controller.calculate(7-v)
 
     # i think the sim clamps this already but i guess for irl
-    if a > 4:
-        a = 4
-    elif a < -10:
-        a = -10
+    if a > MAX_ACCEL:
+        a = MAX_ACCEL
+    elif a < MIN_ACCEL:
+        a = MIN_ACCEL
+
+    count += 1
+    print("time: ", count * 0.01)
     return np.array([a, d_theta])
 
 sim.set_controller(controller)
