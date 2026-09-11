@@ -7,9 +7,9 @@ vel_kp = 2
 vel_ki = 0
 vel_kd = 0
 
-theta_kp = 0.75
+theta_kp = 5
 theta_ki = 0
-theta_kd = 0.1
+theta_kd = 0.3
 
 meters = np.zeros(105)
 for i in range(105): # 105 meter track
@@ -73,7 +73,7 @@ def controller(x):
     global prev_theta
 
     index = find_nearest_point(xpos, ypos)
-    if (index > 102):
+    if (index > 101):
         setpoint = path[104] # idk just stop it
     else:
         setpoint = path[index + 3]
@@ -86,7 +86,7 @@ def controller(x):
 
     # d_theta = theta_controller.calculate(actual_tire_heading, target_heading)
     # ang_error = np.mod(target_heading - phi, 2*np.pi)
-    ang_error = (target_heading - phi + np.pi) % (2 * np.pi) - np.pi
+    ang_error = (target_heading - actual_tire_heading + np.pi) % (2 * np.pi) - np.pi
     d_theta = theta_controller.ang_calculate(ang_error)
 
     # d_theta = (theta - prev_theta) / 0.1 + theta_controller.calculate(phi, target_heading)
