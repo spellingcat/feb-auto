@@ -3,13 +3,13 @@ from simulator import Simulator, centerline
 
 sim = Simulator()
 
-vel_kp = 1
+vel_kp = 2
 vel_ki = 0
 vel_kd = 0
 
-theta_kp = 0.5
+theta_kp = 0.75
 theta_ki = 0
-theta_kd = 0
+theta_kd = 0.1
 
 meters = np.zeros(105)
 for i in range(105): # 105 meter track
@@ -73,10 +73,10 @@ def controller(x):
     global prev_theta
 
     index = find_nearest_point(xpos, ypos)
-    if (index > 99):
+    if (index > 102):
         setpoint = path[104] # idk just stop it
     else:
-        setpoint = path[index + 5]
+        setpoint = path[index + 3]
 
     target_heading = np.arctan2(setpoint[1] - ypos, setpoint[0] - xpos)
     target_heading = np.mod(target_heading, 2*np.pi)
@@ -85,14 +85,15 @@ def controller(x):
     actual_tire_heading = np.mod(actual_tire_heading, 2*np.pi)
 
     # d_theta = theta_controller.calculate(actual_tire_heading, target_heading)
-    ang_error = np.mod(target_heading - phi, 2*np.pi)
+    # ang_error = np.mod(target_heading - phi, 2*np.pi)
+    ang_error = (target_heading - phi + np.pi) % (2 * np.pi) - np.pi
     d_theta = theta_controller.ang_calculate(ang_error)
 
     # d_theta = (theta - prev_theta) / 0.1 + theta_controller.calculate(phi, target_heading)
 
     prev_theta = theta
 
-    a = vel_controller.calculate(v, 4)
+    a = vel_controller.calculate(v, 10)
     return np.array([a, d_theta])
     # return np.array([1, 10])
 
